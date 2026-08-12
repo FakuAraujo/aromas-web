@@ -1212,6 +1212,7 @@ function fileToDataUrl(file,maxDim,cb){ var r=new FileReader(); r.onload=functio
 /* ---------- Arranque ---------- */
 function boot(published){
   if(published){ var draft=dbLoad(); for(var k in published) if(draft[k]===undefined) DB[k]=published[k]; }
+  var t2=D('texts',{}); for(var l2 in t2){ if(I18N[l2]) for(var k2 in t2[l2]) I18N[l2][k2]=t2[l2][k2]; }
   captureDefaults();
   applyColors(); applyFonts(); applyAllImages(); applyWA(); applyHeroVideo(); applySections(); applyBars(); applySeo();
   renderGallery(); renderTestis(); renderFaqs(); renderRates();
