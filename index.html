@@ -684,6 +684,7 @@ body.no-anim .reveal{opacity:1;transform:none}
       <button id="barCon">Contenido</button>
       <button id="barMsg">Consultas</button>
       <button id="barSta">Stats</button>
+      <button id="barCloud">☁ Nube</button>
       <span class="sp"></span>
       <button id="barPub" class="pub">⬆ Publicar</button>
       <button id="barImp">Importar</button>
@@ -711,22 +712,27 @@ body.no-anim .reveal{opacity:1;transform:none}
 <script>
 /* ============================================================
    COMPLEJO AROMAS — CMS + PUBLICACIÓN
-   Guardado en: 1) save.php (hosting con PHP)  2) Netlify Functions+Blobs
+   Canales: 1) save.php (hosting PHP)  2) GitHub (Netlify)  3) descarga manual
    Acceso: #admin · aromas / Fuhrfuhr300
 ============================================================ */
-var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v5", SES_KEY="aromas_admin_ok";
+var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v6", SES_KEY="aromas_admin_ok";
 function dbLoad(){ try{ var r=localStorage.getItem(CMS_KEY); if(r) return JSON.parse(r);}catch(e){} return {}; }
 var DB = dbLoad();
 function persist(){ try{ localStorage.setItem(CMS_KEY, JSON.stringify(DB)); }catch(e){ alert("Almacenamiento lleno: usá URLs o menos fotos."); } }
 function D(key, def){ return (DB[key] !== undefined && DB[key] !== null) ? DB[key] : def; }
+function b64utf8(s){ return btoa(unescape(encodeURIComponent(s))); }
 
-/* ---------- Netlify Functions (Blobs) ---------- */
-function fnUrl(){ return "/.netlify/functions/api"; }
-function fnPut(obj){ return fetch(fnUrl()+"?action=put",{method:"POST",headers:{"Content-Type":"application/json","x-admin-key":ADMIN_PASS},body:JSON.stringify(obj)}).then(function(r){ if(!r.ok)throw 0; }); }
-function fnGet(){ return fetch(fnUrl()+"?action=get").then(function(r){ return r.ok?r.text():""; }).then(function(t){ try{ return JSON.parse(t||"{}"); }catch(e){ return null; } }).catch(function(){ return null; }); }
-function fnContact(p){ return fetch(fnUrl()+"?action=contact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)}).then(function(r){ if(!r.ok)throw 0; }); }
-function fnConsultas(){ return fetch(fnUrl()+"?action=consultas",{headers:{"x-admin-key":ADMIN_PASS}}).then(function(r){ return r.ok?r.json():[]; }).catch(function(){ return []; }); }
-function fnMark(id){ return fetch(fnUrl()+"?action=mark",{method:"POST",headers:{"Content-Type":"application/json","x-admin-key":ADMIN_PASS},body:JSON.stringify({id:id})}); }
+/* ---------- GitHub (publicación en Netlify) ---------- */
+function ghCfg(){ try{ return JSON.parse(localStorage.getItem("aromas_gh")||"null"); }catch(e){ return null; } }
+function ghH(cfg){ return {"Authorization":"token "+cfg.token,"Accept":"application/vnd.github+json","Content-Type":"application/json"}; }
+function ghPut(obj){
+  var cfg=ghCfg(); if(!cfg) return Promise.reject(0);
+  var url="https://api.github.com/repos/"+cfg.user+"/"+cfg.repo+"/contents/content.json";
+  return fetch(url,{headers:ghH(cfg)}).then(function(r){ return r.ok?r.json():null; }).then(function(cur){
+    return fetch(url,{method:"PUT",headers:ghH(cfg),body:JSON.stringify({message:"Publicar sitio Complejo Aromas",content:b64utf8(JSON.stringify(obj)),sha:(cur&&cur.sha)||undefined})});
+  }).then(function(r){ if(!r.ok)throw 0; });
+}
+function ghTest(cfg){ return fetch("https://api.github.com/repos/"+cfg.user+"/"+cfg.repo,{headers:ghH(cfg)}).then(function(r){ if(!r.ok)throw 0; return r.json(); }); }
 
 /* ---------- Datos por defecto ---------- */
 var IMG_BASE="https://image.qwenlm.ai/public_source/3be002c8-5699-427e-a1b3-6fe190c68ea2/";
@@ -930,13 +936,8 @@ document.getElementById("conForm").addEventListener("submit",function(ev){
   var okMsg=function(){ document.getElementById("formOk").classList.add("show"); ev.target.reset(); setTimeout(function(){document.getElementById("formOk").classList.remove("show");},6000); };
   fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"contact"},payload))})
   .then(function(r){ if(!r.ok)throw 0; okMsg(); })
-  .catch(function(){
-    fnContact(payload).then(okMsg)
-    .catch(function(){
-      netlifySend(payload).then(function(r){ if(!r.ok)throw 0; okMsg(); })
-      .catch(function(){ location.href="mailto:info@complejoaromas.com.ar?subject=Consulta%20web&body="+encodeURIComponent(payload.msg+"\n\n"+payload.name+" · "+payload.mail); });
-    });
-  });
+  .catch(function(){ netlifySend(payload).then(function(r){ if(!r.ok)throw 0; okMsg(); })
+    .catch(function(){ location.href="mailto:info@complejoaromas.com.ar?subject=Consulta%20web&body="+encodeURIComponent(payload.msg+"\n\n"+payload.name+" · "+payload.mail); }); });
 });
 document.addEventListener("click",function(ev){ var a=ev.target.closest('a[href*="wa.me"]'); if(a) fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"action":"wa"}'}).catch(function(){}); });
 
@@ -960,17 +961,18 @@ document.getElementById("barSec").addEventListener("click",function(){ openDrawe
 document.getElementById("barCon").addEventListener("click",function(){ openDrawer("con"); });
 document.getElementById("barMsg").addEventListener("click",function(){ openDrawer("msg"); });
 document.getElementById("barSta").addEventListener("click",function(){ openDrawer("sta"); });
+document.getElementById("barCloud").addEventListener("click",function(){ openDrawer("cloud"); });
 
-/* ---------- Publicar: PHP → Netlify Blobs → descarga ---------- */
+/* ---------- Publicar: PHP → GitHub → descarga ---------- */
 function downloadFallback(body){ var b=new Blob([body],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="content.json"; a.click();
-  alert("No se pudo publicar online.\n\nSubí el content.json descargado al lado de index.html,\no verificá que la carpeta netlify/functions esté deployada en Netlify."); }
+  alert("No se pudo publicar online.\n\nSubí el content.json descargado al lado de index.html,\no conectá GitHub desde ☁ Nube para publicar en 1 clic en Netlify."); }
 document.getElementById("barPub").addEventListener("click",function(){
   var body=JSON.stringify(DB);
   fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Basic "+btoa(ADMIN_USER+":"+ADMIN_PASS)},body:body})
   .then(function(r){ if(!r.ok)throw 0; alert("✅ ¡Publicado en el servidor! Todos los visitantes lo ven."); })
   .catch(function(){
-    fnPut(DB).then(function(){ alert("✅ ¡Publicado! Los cambios ya están online para todos."); })
-    .catch(function(){ downloadFallback(body); });
+    if(ghCfg()){ ghPut(DB).then(function(){ alert("✅ ¡Publicado en GitHub! Netlify lo muestra en ~30 segundos."); }).catch(function(){ downloadFallback(body); }); }
+    else downloadFallback(body);
   });
 });
 var impInput=document.createElement("input"); impInput.type="file"; impInput.accept="application/json";
@@ -993,10 +995,29 @@ document.addEventListener("click",function(ev){ if(!editing)return;
 /* ---------- Drawer ---------- */
 function closeDrawer(){ drawer.classList.remove("open"); currentTab=null; }
 function openDrawer(t){ currentTab=t; drawer.classList.add("open");
-  ({cont:renderDrawerCont,img:renderDrawerImg,gal:renderDrawerGal,col:renderDrawerCol,sec:renderDrawerSec,con:renderDrawerCon,msg:renderDrawerMsg,sta:renderDrawerSta})[t](); }
+  ({cont:renderDrawerCont,img:renderDrawerImg,gal:renderDrawerGal,col:renderDrawerCol,sec:renderDrawerSec,con:renderDrawerCon,msg:renderDrawerMsg,sta:renderDrawerSta,cloud:renderDrawerCloud})[t](); }
 
 function renderDrawerCont(){ drawer.innerHTML='<h4>Contenidos</h4><p class="hint">Activá el modo edición y clicá cualquier texto del sitio para modificarlo (Ctrl+Z deshace). Con <b>Publicar</b> lo hacés visible para todos.</p><button class="adm-btn" id="dwEdit">'+(editing?"Desactivar edición":"Activar edición")+'</button>';
   document.getElementById("dwEdit").addEventListener("click",function(){ setEdit(!editing); renderDrawerCont(); }); }
+
+/* ---------- Nube (GitHub) ---------- */
+function renderDrawerCloud(){
+  var cfg=ghCfg();
+  if(cfg){
+    drawer.innerHTML='<h4>☁ Nube conectada (GitHub)</h4><p class="hint">Repo: <b>'+cfg.user+'/'+cfg.repo+'</b><br>Al publicar, el cambio se sube al repositorio y Netlify lo despliega solo en ~30 segundos. Todos los visitantes lo ven.</p><button class="adm-btn" id="ghPub">Publicar en GitHub ahora</button> <button class="adm-btn del" id="ghDel" style="margin-left:6px">Desconectar</button>';
+    document.getElementById("ghPub").addEventListener("click",function(){ ghPut(DB).then(function(){ alert("✅ Publicado en GitHub. Netlify lo muestra en ~30 segundos."); }).catch(function(){ alert("No se pudo publicar en GitHub. Revisá el token."); }); });
+    document.getElementById("ghDel").addEventListener("click",function(){ localStorage.removeItem("aromas_gh"); renderDrawerCloud(); });
+  } else {
+    drawer.innerHTML='<h4>☁ Conectar nube (GitHub)</h4><p class="hint">Para publicar en Netlify en 1 clic:<br>1) Creá un repo <b>público</b> en GitHub y subí ahí los archivos del sitio.<br>2) Conectá ese repo a un sitio de Netlify (Import project → GitHub).<br>3) Creá un token (classic) con permiso <b>public_repo</b>.<br>4) Pegá los datos acá abajo.</p>'+
+    '<div class="adm-row" style="display:block"><input type="text" id="ghUser" placeholder="Tu usuario de GitHub" style="margin-bottom:6px"><input type="text" id="ghRepo" placeholder="Nombre del repo (ej: aromas-web)" style="margin-bottom:6px"><input type="text" id="ghTok" placeholder="Token (ghp_...)" style="margin-bottom:8px"><button class="adm-btn" id="ghSave">Guardar y probar</button></div><div id="ghMsg"></div>';
+    document.getElementById("ghSave").addEventListener("click",function(){
+      var cfg2={user:document.getElementById("ghUser").value.trim(),repo:document.getElementById("ghRepo").value.trim(),token:document.getElementById("ghTok").value.trim()};
+      if(!cfg2.user||!cfg2.repo||!cfg2.token){ document.getElementById("ghMsg").innerHTML='<p class="hint">Completá los 3 campos.</p>'; return; }
+      ghTest(cfg2).then(function(){ localStorage.setItem("aromas_gh",JSON.stringify(cfg2)); ghPut(DB).catch(function(){}); renderDrawerCloud(); })
+      .catch(function(){ document.getElementById("ghMsg").innerHTML='<p class="hint" style="color:var(--rojo)">No pude acceder al repo. Revisá usuario, nombre del repo y que el token tenga permiso public_repo.</p>'; });
+    });
+  }
+}
 
 var IMG_SLOTS=[["logo","Logo del header"],["heroBg","Fondo del hero"],["ctaBg","Fondo banda Reservá"],["feat1","Card Cabañas"],["feat2","Card Suites"],["feat3","Card Servicios"],["cab2a","Cabaña 2 principal"],["cab2b","Cabaña 2 lateral 1"],["cab2c","Cabaña 2 lateral 2"],["cab3a","Cabaña 3 principal"],["cab3b","Cabaña 3 lateral 1"],["cab3c","Cabaña 3 lateral 2"],["suiteImg","Suite principal"]];
 function renderDrawerImg(){
@@ -1148,14 +1169,12 @@ var AUTH={"Authorization":"Basic "+btoa(ADMIN_USER+":"+ADMIN_PASS)};
 function renderDrawerMsg(){
   drawer.innerHTML='<h4>Consultas recibidas</h4><p class="hint">Cargando…</p>';
   fetch("save.php?action=consultas",{headers:AUTH}).then(function(r){ if(!r.ok)throw 0; return r.json(); }).then(function(list){ drawMsgs(list); })
-  .catch(function(){ fnConsultas().then(drawMsgs); });
+  .catch(function(){ drawMsgs([]); });
 }
 function drawMsgs(list){
-  var h='<h4>Consultas recibidas</h4>'; if(!list.length)h+='<p class="hint">Todavía no hay consultas (revisá también Netlify → Forms).</p>';
-  list.forEach(function(c){ h+='<div class="adm-row" style="display:block"><b style="font-size:.8rem">'+(c.name||"")+' <small style="color:var(--gris)">· '+(c.date||"")+' · '+(c.status==="pendiente"?"⏳ pendiente":"✅ respondida")+'</small></b><p style="font-size:.78rem;margin:6px 0">'+(c.msg||"")+'</p><p style="font-size:.72rem;color:var(--gris)">'+(c.mail||"")+' · '+(c.phone||"")+' · '+(c.type||"")+' · '+(c.from||"")+' → '+(c.to||"")+'</p><button class="adm-btn" data-mk="'+(c.id||"")+'" style="margin-top:8px">Alternar respondida</button></div>'; });
+  var h='<h4>Consultas recibidas</h4>'; if(!list.length)h+='<p class="hint">Todavía no hay consultas acá. En Netlify las ves en el panel de Netlify → Forms.</p>';
+  list.forEach(function(c){ h+='<div class="adm-row" style="display:block"><b style="font-size:.8rem">'+(c.name||"")+' <small style="color:var(--gris)">· '+(c.date||"")+' · '+(c.status==="pendiente"?"⏳ pendiente":"✅ respondida")+'</small></b><p style="font-size:.78rem;margin:6px 0">'+(c.msg||"")+'</p><p style="font-size:.72rem;color:var(--gris)">'+(c.mail||"")+' · '+(c.phone||"")+' · '+(c.type||"")+' · '+(c.from||"")+' → '+(c.to||"")+'</p></div>'; });
   drawer.innerHTML=h;
-  drawer.querySelectorAll("[data-mk]").forEach(function(b){ b.addEventListener("click",function(){ var id=b.getAttribute("data-mk"); if(!id)return;
-    fnMark(id).then(renderDrawerMsg).catch(function(){ alert("No disponible sin servidor."); }); }); });
 }
 function renderDrawerSta(){
   drawer.innerHTML='<h4>Estadísticas y backups</h4><p class="hint">Cargando…</p>';
@@ -1164,7 +1183,7 @@ function renderDrawerSta(){
   }).catch(function(){ drawStats(null,false); drawBackups([]); });
 }
 function drawStats(s,php){ var h='<h4>Estadísticas</h4>';
-  if(!php){ h+='<p class="hint">En Netlify el contador propio no está disponible; las consultas las ves acá y en Netlify → Forms. Cuando mudes el sitio al hosting final con save.php, acá vas a ver visitas y clics de WhatsApp.</p>'; }
+  if(!php){ h+='<p class="hint">En Netlify el contador propio no está disponible; las consultas las ves en Netlify → Forms. Cuando mudes el sitio al hosting final con save.php, acá vas a ver visitas y clics de WhatsApp. GitHub te da además historial de cambios (commits) como backup.</p>'; }
   else { h+='<div class="stat-big"><div><b>'+(s.v||0)+'</b><span>Visitas</span></div><div><b>'+(s.wa||0)+'</b><span>Clics WhatsApp</span></div></div>';
     var days=Object.keys(s.days||{}).sort().reverse().slice(0,7);
     days.forEach(function(d){ h+='<div class="adm-row"><span class="lb">'+d+'</span><b style="font-size:.8rem">'+s.days[d].v+' visitas · '+s.days[d].wa+' WA</b></div>'; }); }
@@ -1200,9 +1219,7 @@ function boot(published){
   route();
   fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:'{"action":"hit"}'}).catch(function(){});
 }
-fetch("content.json?v="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.json():null; })
-.then(function(p){ if(p) return boot(p); return fnGet().then(function(c){ boot(c); }); })
-.catch(function(){ fnGet().then(function(c){ boot(c); }); });
+fetch("content.json?v="+Date.now(),{cache:"no-store"}).then(function(r){ return r.ok?r.json():null; }).then(function(p){ boot(p); }).catch(function(){ boot(null); });
 </script>
 </body>
 </html>
