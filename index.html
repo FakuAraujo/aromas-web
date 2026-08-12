@@ -271,7 +271,9 @@ footer{background:var(--foo-bg,var(--marino-osc))}
 #adminBar button.on{background:var(--rojo);border-color:var(--rojo);color:#fff}
 #adminBar button.pub{border-color:var(--wa);color:#b7f5c9}
 #adminBar button.pub:hover{background:var(--wa);color:#fff}
+#adminBar button.save{border-color:var(--celeste);color:var(--celeste)}
 #adminBar .sp{flex:1}
+#adminBar .dirty{background:var(--rojo);border-color:var(--rojo);color:#fff;padding:6px 12px;font-size:.68rem;letter-spacing:1px;font-weight:700;border-radius:12px;margin-left:8px}
 #drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,94vw);background:var(--crema);z-index:1450;border-left:2px solid var(--marino);overflow:auto;padding:70px 22px 50px;transform:translateX(105%);transition:transform .35s ease;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4)}
 #drawer.open{transform:none}
 #drawer h4{font-family:var(--font-head),serif;color:var(--marino);font-size:1.3rem;margin-bottom:12px}
@@ -686,7 +688,9 @@ body.no-anim .reveal{opacity:1;transform:none}
       <button id="barSta">Stats</button>
       <button id="barCloud">☁ Nube</button>
       <span class="sp"></span>
-      <button id="barPub" class="pub">⬆ Publicar</button>
+      <button id="barSave" class="save">💾 Guardar borrador</button>
+      <button id="barPub" class="pub">🚀 Publicar ahora</button>
+      <span id="dirtyBadge" class="dirty" hidden>● Sin publicar</span>
       <button id="barImp">Importar</button>
       <button id="barView">Ver sitio</button>
       <button id="barReset">Restaurar</button>
@@ -712,13 +716,15 @@ body.no-anim .reveal{opacity:1;transform:none}
 <script>
 /* ============================================================
    COMPLEJO AROMAS — CMS + PUBLICACIÓN
-   Canales: 1) save.php (hosting PHP)  2) GitHub (Netlify)  3) descarga manual
+   Modo Borrador: cambios locales gratis, solo ⬆ Publicar gasta créditos
    Acceso: #admin · aromas / Fuhrfuhr300
 ============================================================ */
-var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v6", SES_KEY="aromas_admin_ok";
+var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v7", SES_KEY="aromas_admin_ok", DIRTY_KEY="aromas_dirty_v1";
 function dbLoad(){ try{ var r=localStorage.getItem(CMS_KEY); if(r) return JSON.parse(r);}catch(e){} return {}; }
 var DB = dbLoad();
-function persist(){ try{ localStorage.setItem(CMS_KEY, JSON.stringify(DB)); }catch(e){ alert("Almacenamiento lleno: usá URLs o menos fotos."); } }
+var dirty = localStorage.getItem(DIRTY_KEY)==="1";
+function persist(){ try{ localStorage.setItem(CMS_KEY, JSON.stringify(DB)); markDirty(true); }catch(e){ alert("Almacenamiento lleno: usá URLs o menos fotos."); } }
+function markDirty(v){ dirty=v; try{ localStorage.setItem(DIRTY_KEY, v?"1":"0"); }catch(e){} var b=document.getElementById("dirtyBadge"); if(b) b.hidden=!v; }
 function D(key, def){ return (DB[key] !== undefined && DB[key] !== null) ? DB[key] : def; }
 function b64utf8(s){ return btoa(unescape(encodeURIComponent(s))); }
 
@@ -946,13 +952,13 @@ document.addEventListener("click",function(ev){ var a=ev.target.closest('a[href*
 ============================================================ */
 var editing=false, adminRoot=document.getElementById("adminRoot"), loginBox=document.getElementById("loginBox"), adminUI=document.getElementById("adminUI"), drawer=document.getElementById("drawer"), currentTab=null;
 function route(){ var is=location.hash==="#admin"; adminRoot.hidden=!is; if(!is){setEdit(false);closeDrawer();return;}
-  var ok=sessionStorage.getItem(SES_KEY)==="1"; loginBox.hidden=ok; adminUI.hidden=!ok; if(ok)openDrawer("cont"); }
+  var ok=sessionStorage.getItem(SES_KEY)==="1"; loginBox.hidden=ok; adminUI.hidden=!ok; if(ok)openDrawer("cont"); markDirty(dirty); }
 window.addEventListener("hashchange",route);
 document.getElementById("loginForm").addEventListener("submit",function(ev){ ev.preventDefault();
   if(document.getElementById("lgUser").value===ADMIN_USER&&document.getElementById("lgPass").value===ADMIN_PASS){ sessionStorage.setItem(SES_KEY,"1"); route(); } else document.getElementById("loginErr").classList.add("show"); });
 document.getElementById("barOut").addEventListener("click",function(){ sessionStorage.removeItem(SES_KEY); setEdit(false); location.hash=""; });
 document.getElementById("barView").addEventListener("click",function(){ setEdit(false); closeDrawer(); location.hash=""; });
-document.getElementById("barReset").addEventListener("click",function(){ if(confirm("¿Restaurar TODO al estado original?")){ localStorage.removeItem(CMS_KEY); location.reload(); } });
+document.getElementById("barReset").addEventListener("click",function(){ if(confirm("¿Restaurar TODO al estado original?")){ localStorage.removeItem(CMS_KEY); localStorage.removeItem(DIRTY_KEY); location.reload(); } });
 document.getElementById("barEdit").addEventListener("click",function(){ setEdit(!editing); });
 document.getElementById("barImg").addEventListener("click",function(){ openDrawer("img"); });
 document.getElementById("barGal").addEventListener("click",function(){ openDrawer("gal"); });
@@ -963,16 +969,29 @@ document.getElementById("barMsg").addEventListener("click",function(){ openDrawe
 document.getElementById("barSta").addEventListener("click",function(){ openDrawer("sta"); });
 document.getElementById("barCloud").addEventListener("click",function(){ openDrawer("cloud"); });
 
-/* ---------- Publicar: PHP → GitHub → descarga ---------- */
+/* ---------- Guardar borrador vs Publicar ahora ---------- */
+document.getElementById("barSave").addEventListener("click",function(){
+  persist();
+  var b=document.getElementById("barSave");
+  var old=b.textContent; b.textContent="✓ Guardado";
+  setTimeout(function(){ b.textContent=old; }, 1500);
+  alert("💾 Borrador guardado en tu navegador.\n\nTus cambios están seguros, pero solo vos los ves.\nCuando quieras que todos los vean, pulsá 🚀 Publicar ahora.");
+});
 function downloadFallback(body){ var b=new Blob([body],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="content.json"; a.click();
   alert("No se pudo publicar online.\n\nSubí el content.json descargado al lado de index.html,\no conectá GitHub desde ☁ Nube para publicar en 1 clic en Netlify."); }
 document.getElementById("barPub").addEventListener("click",function(){
+  if(!ghCfg()){ if(!confirm("Todavía no conectaste GitHub.\n\n¿Querés subir el content.json descargado (manual) o conectar GitHub ahora?")){ openDrawer("cloud"); return; }
+    downloadFallback(JSON.stringify(DB)); return; }
   var body=JSON.stringify(DB);
-  fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Basic "+btoa(ADMIN_USER+":"+ADMIN_PASS)},body:body})
-  .then(function(r){ if(!r.ok)throw 0; alert("✅ ¡Publicado en el servidor! Todos los visitantes lo ven."); })
-  .catch(function(){
-    if(ghCfg()){ ghPut(DB).then(function(){ alert("✅ ¡Publicado en GitHub! Netlify lo muestra en ~30 segundos."); }).catch(function(){ downloadFallback(body); }); }
-    else downloadFallback(body);
+  var btn=document.getElementById("barPub"); var old=btn.textContent; btn.textContent="⏳ Publicando..."; btn.disabled=true;
+  ghPut(DB).then(function(){
+    markDirty(false);
+    btn.textContent="✓ ¡Publicado!";
+    setTimeout(function(){ btn.textContent=old; btn.disabled=false; }, 2500);
+    alert("🚀 ¡Publicado! Los cambios ya están en GitHub.\n\nNetlify los mostrará a todos los visitantes en ~30 segundos.\nGastaste 1 deploy (de los ~600 gratis mensuales).");
+  }).catch(function(){
+    btn.textContent=old; btn.disabled=false;
+    downloadFallback(body);
   });
 });
 var impInput=document.createElement("input"); impInput.type="file"; impInput.accept="application/json";
@@ -997,23 +1016,23 @@ function closeDrawer(){ drawer.classList.remove("open"); currentTab=null; }
 function openDrawer(t){ currentTab=t; drawer.classList.add("open");
   ({cont:renderDrawerCont,img:renderDrawerImg,gal:renderDrawerGal,col:renderDrawerCol,sec:renderDrawerSec,con:renderDrawerCon,msg:renderDrawerMsg,sta:renderDrawerSta,cloud:renderDrawerCloud})[t](); }
 
-function renderDrawerCont(){ drawer.innerHTML='<h4>Contenidos</h4><p class="hint">Activá el modo edición y clicá cualquier texto del sitio para modificarlo (Ctrl+Z deshace). Con <b>Publicar</b> lo hacés visible para todos.</p><button class="adm-btn" id="dwEdit">'+(editing?"Desactivar edición":"Activar edición")+'</button>';
+function renderDrawerCont(){ drawer.innerHTML='<h4>Contenidos</h4><p class="hint">Activá el modo edición y clicá cualquier texto del sitio para modificarlo (Ctrl+Z deshace). Los cambios se guardan como <b>borrador gratis</b>. Cuando termines, pulsá <b>🚀 Publicar ahora</b> para que todos los vean.</p><button class="adm-btn" id="dwEdit">'+(editing?"Desactivar edición":"Activar edición")+'</button>';
   document.getElementById("dwEdit").addEventListener("click",function(){ setEdit(!editing); renderDrawerCont(); }); }
 
 /* ---------- Nube (GitHub) ---------- */
 function renderDrawerCloud(){
   var cfg=ghCfg();
   if(cfg){
-    drawer.innerHTML='<h4>☁ Nube conectada (GitHub)</h4><p class="hint">Repo: <b>'+cfg.user+'/'+cfg.repo+'</b><br>Al publicar, el cambio se sube al repositorio y Netlify lo despliega solo en ~30 segundos. Todos los visitantes lo ven.</p><button class="adm-btn" id="ghPub">Publicar en GitHub ahora</button> <button class="adm-btn del" id="ghDel" style="margin-left:6px">Desconectar</button>';
-    document.getElementById("ghPub").addEventListener("click",function(){ ghPut(DB).then(function(){ alert("✅ Publicado en GitHub. Netlify lo muestra en ~30 segundos."); }).catch(function(){ alert("No se pudo publicar en GitHub. Revisá el token."); }); });
-    document.getElementById("ghDel").addEventListener("click",function(){ localStorage.removeItem("aromas_gh"); renderDrawerCloud(); });
+    drawer.innerHTML='<h4>☁ Nube conectada (GitHub)</h4><p class="hint">Repo: <b>'+cfg.user+'/'+cfg.repo+'</b><br>Al pulsar <b>🚀 Publicar ahora</b>, el cambio se sube al repositorio y Netlify lo despliega solo en ~30 segundos. Gastás 1 deploy (de los ~600 gratis mensuales). <b>💾 Guardar borrador</b> es gratis (no gasta deploy).</p><button class="adm-btn" id="ghPub">Publicar en GitHub ahora</button> <button class="adm-btn del" id="ghDel" style="margin-left:6px">Desconectar</button>';
+    document.getElementById("ghPub").addEventListener("click",function(){ document.getElementById("barPub").click(); });
+    document.getElementById("ghDel").addEventListener("click",function(){ if(confirm("¿Desconectar GitHub? Los borradores quedan en tu navegador.")){ localStorage.removeItem("aromas_gh"); renderDrawerCloud(); } });
   } else {
     drawer.innerHTML='<h4>☁ Conectar nube (GitHub)</h4><p class="hint">Para publicar en Netlify en 1 clic:<br>1) Creá un repo <b>público</b> en GitHub y subí ahí los archivos del sitio.<br>2) Conectá ese repo a un sitio de Netlify (Import project → GitHub).<br>3) Creá un token (classic) con permiso <b>public_repo</b>.<br>4) Pegá los datos acá abajo.</p>'+
     '<div class="adm-row" style="display:block"><input type="text" id="ghUser" placeholder="Tu usuario de GitHub" style="margin-bottom:6px"><input type="text" id="ghRepo" placeholder="Nombre del repo (ej: aromas-web)" style="margin-bottom:6px"><input type="text" id="ghTok" placeholder="Token (ghp_...)" style="margin-bottom:8px"><button class="adm-btn" id="ghSave">Guardar y probar</button></div><div id="ghMsg"></div>';
     document.getElementById("ghSave").addEventListener("click",function(){
       var cfg2={user:document.getElementById("ghUser").value.trim(),repo:document.getElementById("ghRepo").value.trim(),token:document.getElementById("ghTok").value.trim()};
       if(!cfg2.user||!cfg2.repo||!cfg2.token){ document.getElementById("ghMsg").innerHTML='<p class="hint">Completá los 3 campos.</p>'; return; }
-      ghTest(cfg2).then(function(){ localStorage.setItem("aromas_gh",JSON.stringify(cfg2)); ghPut(DB).catch(function(){}); renderDrawerCloud(); })
+      ghTest(cfg2).then(function(){ localStorage.setItem("aromas_gh",JSON.stringify(cfg2)); renderDrawerCloud(); })
       .catch(function(){ document.getElementById("ghMsg").innerHTML='<p class="hint" style="color:var(--rojo)">No pude acceder al repo. Revisá usuario, nombre del repo y que el token tenga permiso public_repo.</p>'; });
     });
   }
@@ -1172,7 +1191,7 @@ function renderDrawerMsg(){
   .catch(function(){ drawMsgs([]); });
 }
 function drawMsgs(list){
-  var h='<h4>Consultas recibidas</h4>'; if(!list.length)h+='<p class="hint">Todavía no hay consultas acá. En Netlify las ves en el panel de Netlify → Forms.</p>';
+  var h='<h4>Consultas recibidas</h4>'; if(!list.length)h+='<p class="hint">Todavía no hay consultas acá. En Netlify las ves en Netlify → Forms.</p>';
   list.forEach(function(c){ h+='<div class="adm-row" style="display:block"><b style="font-size:.8rem">'+(c.name||"")+' <small style="color:var(--gris)">· '+(c.date||"")+' · '+(c.status==="pendiente"?"⏳ pendiente":"✅ respondida")+'</small></b><p style="font-size:.78rem;margin:6px 0">'+(c.msg||"")+'</p><p style="font-size:.72rem;color:var(--gris)">'+(c.mail||"")+' · '+(c.phone||"")+' · '+(c.type||"")+' · '+(c.from||"")+' → '+(c.to||"")+'</p></div>'; });
   drawer.innerHTML=h;
 }
