@@ -57,13 +57,12 @@ nav.main a:hover::after,nav.main a.active::after{width:100%}nav.main a.active{co
 .burger{display:none;background:none;border:none;cursor:pointer;width:44px;height:44px;position:relative;z-index:950}
 .burger span{display:block;width:24px;height:2px;background:var(--marino);margin:5px auto;transition:all .3s ease}
 .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}.burger.open span:nth-child(2){opacity:0}.burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-/* ---------- HERO: carrusel con barrido lateral ---------- */
+/* ---------- HERO: carrusel con barrido + video ---------- */
 .hero{min-height:100svh;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;position:relative;overflow:hidden}
 .hero-track{position:absolute;inset:0;display:flex;will-change:transform;transition:transform 1.4s cubic-bezier(.77,0,.18,1)}
-.hslide{position:relative;flex:0 0 100%;background-size:cover;background-position:center}
+.hslide{position:relative;flex:0 0 100%;background-size:cover;background-position:center;overflow:hidden}
+.hslide iframe,.hslide video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
 .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(21,44,73,.62) 0%,rgba(21,44,73,.30) 45%,rgba(140,20,24,.55) 100%);background:linear-gradient(180deg,color-mix(in srgb,var(--hero-g1,#152C49) 62%,transparent) 0%,color-mix(in srgb,var(--hero-g1,#152C49) 30%,transparent) 45%,color-mix(in srgb,var(--hero-g2,#8C1418) 55%,transparent) 100%)}
-.hero-video{position:absolute;inset:0;z-index:0;pointer-events:none}
-.hero-video iframe{width:100vw;height:56.25vw;min-height:100%;min-width:177.78vh;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 .hero-in{position:relative;z-index:2;padding:130px 20px 90px;max-width:940px}
 .hero-badge{display:inline-block;font-size:.72rem;letter-spacing:4px;text-transform:uppercase;border:1px solid rgba(255,255,255,.65);padding:10px 22px;background:rgba(21,44,73,.35)}
 .hero h1{font-size:clamp(2.7rem,6.5vw,4.9rem);font-weight:700;line-height:1.1;margin:28px 0 18px;text-shadow:0 4px 30px rgba(0,0,0,.4)}
@@ -270,7 +269,6 @@ footer{background:var(--foo-bg,var(--marino-osc))}
 .editing [data-i18n]{outline:1px dashed var(--celeste);outline-offset:3px;cursor:text;min-width:20px}
 .editing [data-i18n]:hover{outline-color:var(--rojo);background:rgba(95,168,220,.12)}
 .editing [data-img],.editing [data-imgbg]{outline:2px dashed var(--rojo);outline-offset:3px;cursor:pointer}
-/* ---------- Barra de formato enriquecido ---------- */
 #fmtBar{position:fixed;z-index:1700;background:var(--marino-osc);display:flex;gap:6px;padding:8px 10px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);align-items:center;flex-wrap:wrap;max-width:340px}
 #fmtBar button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;min-width:30px;height:30px;cursor:pointer;font-size:.8rem;padding:0 6px}
 #fmtBar button:hover{background:var(--rojo);border-color:var(--rojo)}
@@ -349,7 +347,6 @@ body.no-anim .hero-track{transition:none}
 }
 @media(max-width:640px){.cards3,.testi-grid{grid-template-columns:1fr}.serv-flow{columns:1}.masonry{columns:1}.f-row{grid-template-columns:1fr}.ubi-stats{flex-direction:column;gap:18px;border-bottom:none}.ubi-stat{border-right:none;border-bottom:1px solid var(--linea);padding:0 0 14px}.cab-photos{grid-template-columns:1fr}.cab-photos .ph-side{grid-template-columns:1fr 1fr}.suites-feats{grid-template-columns:1fr 1fr}.tar-row{grid-template-columns:1fr}.foot-logo img{height:70px}}
 </style>
-<!-- Estilos personalizados del editor: DEBEN ir después del CSS principal para poder pisarlo -->
 <style id="customTypo"></style>
 <style id="customLayout"></style>
 </head>
@@ -391,7 +388,6 @@ body.no-anim .hero-track{transition:none}
 
 <section class="hero" id="inicio" style="padding:0">
   <div class="hero-track" id="heroCarousel"></div>
-  <div class="hero-video" id="heroVideo" hidden></div>
   <div class="hero-in">
     <span class="hero-badge" data-i18n="hero.badge">Costa Atlántica · Buenos Aires</span>
     <h1 data-i18n="hero.title">Tu refugio en <em>Mar de las Pampas</em></h1>
@@ -691,7 +687,6 @@ body.no-anim .hero-track{transition:none}
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
 </a>
 
-<!-- Barra de formato enriquecido (aparece al seleccionar texto en modo edición) -->
 <div id="fmtBar" hidden>
   <button data-cmd="bold" title="Negrita"><b>B</b></button>
   <button data-cmd="italic" title="Cursiva"><i>I</i></button>
@@ -769,7 +764,7 @@ body.no-anim .hero-track{transition:none}
 
 <script>
 /* ============================================================
-   COMPLEJO AROMAS — CMS v9 (conserva borradores v7)
+   COMPLEJO AROMAS — CMS v10 (conserva borradores v7)
    Acceso: #admin · aromas / Fuhrfuhr300
 ============================================================ */
 var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v7", SES_KEY="aromas_admin_ok", DIRTY_KEY="aromas_dirty_v1";
@@ -809,7 +804,6 @@ var GALLERY_DEFAULT=[
  {src:IMG_BASE+"19beaa114-1245-4f29-bd4e-eb933e39d6c2.png",cat:"serv",ratio:"wide",alt:"gal.a7",cover:true},
  {src:IMG_BASE+"11395ab41-81b9-4eef-95c8-e3e7bcaea3b6.png",cat:"ent",ratio:"tall",alt:"gal.a10"}];
 var SECTIONS_DEFAULT=["inicio","destacados","cabanas","suites","servicios","tarifas","galeria","ubicacion","testimonios","faq","cta","contacto"];
-/* Bloques originales que se pueden ocultar/eliminar */
 var BASE_BLOCKS=[
  ["heroBadge",".hero-badge","Sello 'Costa Atlántica' del hero"],
  ["heroCtas",".hero-ctas","Botones 'Ver Cabañas / Ver Suites'"],
@@ -897,33 +891,87 @@ function applyLang(l){ currentLang=l; document.documentElement.lang=l;
   renderTestis(); renderFaqs(); renderRates();
   if(lbBoxOpen()) showLb(); }
 
-/* ---------- CARRUSEL HERO ---------- */
-var heroTimer=null, heroIdx=0;
+/* ---------- CARRUSEL HERO con VIDEO como 1ª slide ---------- */
+var heroTimer=null, heroIdx=0, HERO_SLIDES=[];
+function ytId(u){ var m=(u||"").match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/); return m?m[1]:(/^[\w-]{11}$/.test(u||"")?u:""); }
+function heroVideoCfg(){
+  var v=(D('settings',{})||{}).heroVideo||"";
+  if(!v) return null;
+  var yt=ytId(v);
+  if(yt) return {kind:'yt', id:yt};
+  if(/\.(mp4|webm|ogv)(\?|$)/i.test(v)) return {kind:'file', url:v};
+  return null;
+}
 function heroSlidesList(){
   var custom=(D('settings',{})||{}).heroSlides;
-  if(custom && custom.length) return custom.slice();
+  var list = (custom && custom.length)? custom.slice() : HERO_DEFAULT.slice();
   var hb=(D('images',{})||{}).heroBg;
-  var list=HERO_DEFAULT.slice();
-  if(hb) list[0]=hb;
+  if(!(custom&&custom.length) && hb) list[0]=hb;
   return list;
 }
 function buildHeroCarousel(){
-  if(heroTimer){ clearInterval(heroTimer); heroTimer=null; }
+  if(heroTimer){ clearTimeout(heroTimer); heroTimer=null; }
   var track=document.getElementById("heroCarousel");
-  var list=heroSlidesList();
+  var vid=heroVideoCfg();
+  var imgs=heroSlidesList();
   track.innerHTML="";
   heroIdx=0;
-  list.forEach(function(src){ var d=document.createElement("div"); d.className="hslide"; d.style.backgroundImage="url('"+src+"')"; track.appendChild(d); });
-  if(list.length>1){
-    var clone=document.createElement("div"); clone.className="hslide"; clone.style.backgroundImage="url('"+list[0]+"')"; track.appendChild(clone);
-    setTrackX(false);
-    heroTimer=setInterval(function(){
-      var n=track.children.length-1;
-      heroIdx++;
-      setTrackX(true);
-      if(heroIdx===n){ setTimeout(function(){ setTrackX(false); heroIdx=0; }, 1500); }
-    }, 7000);
+  HERO_SLIDES=[];
+  if(vid) HERO_SLIDES.push({video:vid});
+  imgs.forEach(function(s){ HERO_SLIDES.push({img:s}); });
+  HERO_SLIDES.forEach(function(s){
+    var d=document.createElement("div"); d.className="hslide";
+    if(s.img) d.style.backgroundImage="url('"+s.img+"')";
+    track.appendChild(d);
+  });
+  if(HERO_SLIDES.length>1){
+    var clone=document.createElement("div"); clone.className="hslide";
+    if(HERO_SLIDES[0].img) clone.style.backgroundImage="url('"+HERO_SLIDES[0].img+"')";
+    track.appendChild(clone);
+    activateSlide(0);
+    scheduleNext();
+  } else if(HERO_SLIDES.length===1){ activateSlide(0); }
+}
+function slideEl(i){ var track=document.getElementById("heroCarousel"); if(i==="clone") return track.lastElementChild; return track.children[i]; }
+function slideData(i){ return (i==="clone")? HERO_SLIDES[0] : HERO_SLIDES[i]; }
+function activateSlide(i){
+  var el=slideEl(i); if(!el)return;
+  var s=slideData(i);
+  if(s && s.video) injectPlayer(el, s.video);
+}
+function deactivateSlide(i){
+  var el=slideEl(i); if(!el)return;
+  var s=slideData(i);
+  if(s && s.video) el.innerHTML="";
+}
+function injectPlayer(el, vid){
+  if(vid.kind==='yt'){
+    el.innerHTML='<iframe src="https://www.youtube.com/embed/'+vid.id+'?autoplay=1&mute=1&controls=0&playsinline=1&loop=1&playlist='+vid.id+'" allow="autoplay; encrypted-media" title="Video"></iframe>';
+  } else {
+    el.innerHTML='<video src="'+vid.url+'" autoplay muted loop playsinline></video>';
   }
+}
+function currentDelay(){
+  var s=HERO_SLIDES[heroIdx];
+  if(s && s.video) return s.video.kind==='yt'?12000:10000;
+  return 7000;
+}
+function scheduleNext(){
+  if(heroTimer) clearTimeout(heroTimer);
+  heroTimer=setTimeout(function(){
+    var track=document.getElementById("heroCarousel");
+    var n=track.children.length-1;
+    deactivateSlide(heroIdx);
+    heroIdx++;
+    setTrackX(true);
+    if(heroIdx===n){
+      activateSlide("clone");
+      setTimeout(function(){ setTrackX(false); deactivateSlide("clone"); heroIdx=0; activateSlide(0); scheduleNext(); },1500);
+    } else {
+      activateSlide(heroIdx);
+      scheduleNext();
+    }
+  }, currentDelay());
 }
 function setTrackX(smooth){
   var track=document.getElementById("heroCarousel");
@@ -1000,9 +1048,6 @@ function applyImage(key){ var v=D('images',{})[key];
   document.querySelectorAll('[data-imgbg="'+key+'"]').forEach(function(el){ if(v)el.style.backgroundImage="url('"+v+"')"; else el.style.backgroundImage=""; }); }
 function applyAllImages(){ var im=D('images',{}); for(var k in im) applyImage(k); }
 function applyWA(){ var w=D('wa',WA_DEFAULT); document.querySelectorAll('[data-wa]').forEach(function(a){ a.href="https://wa.me/542255600404?text="+encodeURIComponent(w[a.getAttribute("data-wa")]||WA_DEFAULT[a.getAttribute("data-wa")]||w.general); }); }
-function applyHeroVideo(){ var id=D('settings',{}).heroVideo||"", box=document.getElementById("heroVideo");
-  if(id){ box.hidden=false; box.innerHTML='<iframe src="https://www.youtube.com/embed/'+id+'?autoplay=1&mute=1&controls=0&loop=1&playlist='+id+'&playsinline=1" allow="autoplay" title="Video"></iframe>'; } else { box.hidden=true; box.innerHTML=""; } }
-function ytId(u){ var m=(u||"").match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/); return m?m[1]:(/^[\w-]{11}$/.test(u||"")?u:""); }
 function applySections(){
   var list=D('sections',null)||SECTIONS_DEFAULT.map(function(id){return {id:id,hidden:false};});
   var ids=list.map(function(s){return s.id;});
@@ -1177,7 +1222,7 @@ document.addEventListener("click",function(ev){ if(!editing)return;
   if(im){ ev.preventDefault(); ev.stopPropagation(); openImgModal(im.getAttribute("data-img")||im.getAttribute("data-imgbg")); return; }
 },true);
 
-/* Barra de formato enriquecido (por selección) */
+/* Barra de formato */
 var fmtBar=document.getElementById("fmtBar"), lastRange=null;
 function editableAncestor(node){
   var n=node;
@@ -1230,7 +1275,6 @@ function openDrawer(t){ currentTab=t; drawer.classList.add("open");
 function renderDrawerCont(){ drawer.innerHTML='<h4>Contenidos</h4><p class="hint">Activá <b>✎ Edición</b>: clic en cualquier texto para reescribirlo, y <b>seleccionando una parte</b> aparece la barra para cambiarle fuente/color/tamaño solo a esa parte. Ctrl+Z deshace. Todo queda como borrador gratis hasta que pulses 🚀.</p><button class="adm-btn" id="dwEdit">'+(editing?"Desactivar edición":"Activar edición")+'</button>';
   document.getElementById("dwEdit").addEventListener("click",function(){ setEdit(!editing); renderDrawerCont(); }); }
 
-/* ---------- Drawer Tipografía (elemento completo) ---------- */
 function renderDrawerTypo(){
   var h='<h4>Aa Tipografías</h4><p class="hint">Estilos para el elemento COMPLETO. (Para cambiar solo una palabra o letra, usá ✎ Edición y seleccioná el texto.)</p>'+
   '<select class="secsel" id="typoSel">'+Object.keys(TYPO_TARGETS).map(function(k){return '<option value="'+k+'">'+TYPO_TARGETS[k][1]+'</option>';}).join("")+'</select><div id="typoCtrls"></div>';
@@ -1262,7 +1306,6 @@ function renderTypoCtrls(key){
   ["tyFF","tyFS","tyFW","tyCol","tyColOn","tyLS"].forEach(function(id){ document.getElementById(id).addEventListener("input",save); });
   document.getElementById("tyClear").addEventListener("click",function(){ if(DB.typo)delete DB.typo[key]; persist(); applyTypo(); renderTypoCtrls(key); });
 }
-/* ---------- Drawer Layout ---------- */
 function renderDrawerLayout(){
   var L=D('layout',{});
   var h='<h4>⬍ Layout y contenedores</h4><p class="hint">Controlá los espacios globales del sitio.</p>'+
@@ -1284,7 +1327,6 @@ function renderDrawerLayout(){
   ["lyPad","lyWrap","lyGap"].forEach(function(id){ document.getElementById(id).addEventListener("input",save); });
   document.getElementById("lyClear").addEventListener("click",function(){ DB.layout={}; persist(); applyLayout(); renderDrawerLayout(); });
 }
-/* ---------- Drawer Bloques (nuevos + originales) ---------- */
 var BLOCK_TYPES={title:"Título",text:"Título + texto",quote:"Cita destacada",image:"Imagen",spacer:"Separador (espacio)"};
 function renderDrawerBlocks(){
   var list=D('blocks',[])||[];
@@ -1329,7 +1371,6 @@ function renderDrawerBlocks(){
   drawer.querySelectorAll("[data-hb]").forEach(function(x){ x.addEventListener("click",function(){ var k=x.getAttribute("data-hb"); DB.hideBase=DB.hideBase||{}; DB.hideBase[k]=!DB.hideBase[k]; if(!DB.hideBase[k])delete DB.hideBase[k]; persist(); applyBaseHidden(); renderDrawerBlocks(); }); });
 }
 
-/* ---------- Nube (GitHub) ---------- */
 function renderDrawerCloud(){
   var cfg=ghCfg();
   if(cfg){
@@ -1348,21 +1389,24 @@ function renderDrawerCloud(){
   }
 }
 
-/* ---------- Imágenes + carrusel ---------- */
+/* ---------- Imágenes + carrusel + video ---------- */
 var IMG_SLOTS=[["logo","Logo (header y footer)"],["ctaBg","Fondo banda Reservá"],["feat1","Card Cabañas"],["feat2","Card Suites"],["feat3","Card Servicios"],["cab2a","Cabaña 2 principal"],["cab2b","Cabaña 2 lateral 1"],["cab2c","Cabaña 2 lateral 2"],["cab3a","Cabaña 3 principal"],["cab3b","Cabaña 3 lateral 1"],["cab3c","Cabaña 3 lateral 2"],["suiteImg","Suite principal"]];
 function renderDrawerImg(){
   var h='<h4>Imágenes</h4><p class="hint">Cambiá logo, fondos y fotos (URL o archivo).</p>';
   IMG_SLOTS.forEach(function(s){ var k=s[0]; h+='<div class="adm-row"><img src="'+(D("images",{})[k]||DEFAULT_IMG[k]||"")+'"><span class="lb">'+s[1]+'</span><button class="adm-btn" data-im="'+k+'">Cambiar</button>'+(D("images",{})[k]?'<button class="adm-btn del" data-rs="'+k+'">↺</button>':"")+'</div>'; });
   var slides=(D('settings',{})||{}).heroSlides||null;
   var list=slides?slides:heroSlidesList();
-  h+='<h4 style="margin-top:18px">🎞 Carrusel del hero</h4><p class="hint">Las fotos pasan con barrido lateral. Agregá, quitá o restaurá.</p>';
+  h+='<h4 style="margin-top:18px">🎬 Video del hero (1ª slide del carrusel)</h4>'+
+  '<p class="hint">Pegá un link de <b>YouTube</b> o una URL directa <b>.mp4</b>.<br>Si el video está en tu PC: subilo a YouTube como "Oculto" y pegá el link; o si pesa &lt;25 MB subilo al repo en <b>video/hero.mp4</b> y pegá <b>video/hero.mp4</b>.</p>'+
+  '<div class="adm-row"><input type="text" id="hvUrl" class="full" placeholder="https://youtube.com/watch?v=… o video/hero.mp4" value="'+((D('settings',{})||{}).heroVideo||"")+'"><button class="adm-btn" id="hvSave">Aplicar</button>'+(((D('settings',{})||{}).heroVideo)?'<button class="adm-btn del" id="hvDel">✕</button>':'')+'</div>';
+  h+='<h4 style="margin-top:18px">🎞 Fotos del carrusel</h4><p class="hint">El video (si hay) va primero; después estas fotos con barrido lateral.</p>';
   list.forEach(function(src,i){ h+='<div class="adm-row"><img src="'+src+'"><span class="lb">Foto '+(i+1)+'</span><button class="adm-btn del" data-hs="'+i+'">✕</button></div>'; });
   h+='<div class="adm-add"><input type="text" id="hsUrl" class="full" placeholder="URL de imagen para el carrusel"><input type="file" id="hsFile" accept="image/*"><button class="adm-btn" id="hsAdd">+ Agregar al carrusel</button><button class="adm-btn" id="hsReset" style="margin-left:6px">Restaurar</button></div>';
-  var hv=D('settings',{}).heroVideo||"";
-  h+='<div class="adm-row"><span class="lb">Video de YouTube en el hero (opcional)</span><input type="text" id="hvUrl" class="full" placeholder="https://youtube.com/watch?v=…" value="'+hv+'"><button class="adm-btn" id="hvSave">Aplicar</button></div>';
   drawer.innerHTML=h;
   drawer.querySelectorAll("[data-im]").forEach(function(b){ b.addEventListener("click",function(){ openImgModal(b.getAttribute("data-im")); }); });
   drawer.querySelectorAll("[data-rs]").forEach(function(b){ b.addEventListener("click",function(){ var k=b.getAttribute("data-rs"); delete DB.images[k]; persist(); applyImage(k); renderDrawerImg(); }); });
+  document.getElementById("hvSave").addEventListener("click",function(){ DB.settings=DB.settings||{}; DB.settings.heroVideo=document.getElementById("hvUrl").value.trim(); persist(); buildHeroCarousel(); renderDrawerImg(); });
+  var del=document.getElementById("hvDel"); if(del) del.addEventListener("click",function(){ DB.settings=DB.settings||{}; delete DB.settings.heroVideo; persist(); buildHeroCarousel(); renderDrawerImg(); });
   drawer.querySelectorAll("[data-hs]").forEach(function(b){ b.addEventListener("click",function(){
     var arr=(D('settings',{}).heroSlides||heroSlidesList()).slice();
     arr.splice(+b.getAttribute("data-hs"),1);
@@ -1375,7 +1419,6 @@ function renderDrawerImg(){
     if(f){ fileToDataUrl(f,1800,function(u){ push(u); }); }
   });
   document.getElementById("hsReset").addEventListener("click",function(){ DB.settings=DB.settings||{}; delete DB.settings.heroSlides; persist(); buildHeroCarousel(); renderDrawerImg(); });
-  document.getElementById("hvSave").addEventListener("click",function(){ DB.settings=DB.settings||{}; DB.settings.heroVideo=ytId(document.getElementById("hvUrl").value); persist(); applyHeroVideo(); });
 }
 var CAT_LABELS={cab2:"Cabañas 2 amb",cab3:"Cabañas 3 amb",suites:"Suites",serv:"Servicios",ent:"Entorno"};
 var dragIdx=null;
@@ -1561,7 +1604,7 @@ function boot(published){
   if(published){ var draft=dbLoad(); for(var k in published) if(draft[k]===undefined) DB[k]=published[k]; }
   var t2=D('texts',{}); for(var l2 in t2){ if(I18N[l2]) for(var k2 in t2[l2]) I18N[l2][k2]=t2[l2][k2]; }
   captureDefaults();
-  applyColors(); applyFonts(); applyTypo(); applyLayout(); applyAllImages(); applyWA(); applyHeroVideo(); applySections(); applyBlocks(); applyBaseHidden(); applyBars(); applySeo();
+  applyColors(); applyFonts(); applyTypo(); applyLayout(); applyAllImages(); applyWA(); applySections(); applyBlocks(); applyBaseHidden(); applyBars(); applySeo();
   buildHeroCarousel();
   renderGallery(); renderTestis(); renderFaqs(); renderRates();
   applyLang("es");
