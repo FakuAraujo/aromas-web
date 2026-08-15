@@ -57,11 +57,17 @@ nav.main a:hover::after,nav.main a.active::after{width:100%}nav.main a.active{co
 .burger{display:none;background:none;border:none;cursor:pointer;width:44px;height:44px;position:relative;z-index:950}
 .burger span{display:block;width:24px;height:2px;background:var(--marino);margin:5px auto;transition:all .3s ease}
 .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}.burger.open span:nth-child(2){opacity:0}.burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-/* ---------- HERO: carrusel con barrido + video ---------- */
+/* ---------- HERO: carrusel con barrido + video integrado ---------- */
 .hero{min-height:100svh;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;position:relative;overflow:hidden}
 .hero-track{position:absolute;inset:0;display:flex;will-change:transform;transition:transform 1.4s cubic-bezier(.77,0,.18,1)}
 .hslide{position:relative;flex:0 0 100%;background-size:cover;background-position:center;overflow:hidden}
-.hslide iframe,.hslide video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0}
+/* MP4: cubre el 100% sin bordes ni controles */
+.hslide video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;background:transparent}
+/* YouTube: truco de recorte para cubrir + póster que tapa la UI mientras carga */
+.hslide .vwrap{position:absolute;inset:0;overflow:hidden}
+.hslide .vwrap iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100vw;height:56.25vw;min-width:177.78vh;min-height:100vh;border:0;pointer-events:none}
+.hslide .vposter{position:absolute;inset:0;background-size:cover;background-position:center;opacity:1;transition:opacity .9s ease}
+.hslide .vposter.off{opacity:0}
 .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(21,44,73,.62) 0%,rgba(21,44,73,.30) 45%,rgba(140,20,24,.55) 100%);background:linear-gradient(180deg,color-mix(in srgb,var(--hero-g1,#152C49) 62%,transparent) 0%,color-mix(in srgb,var(--hero-g1,#152C49) 30%,transparent) 45%,color-mix(in srgb,var(--hero-g2,#8C1418) 55%,transparent) 100%)}
 .hero-in{position:relative;z-index:2;padding:130px 20px 90px;max-width:940px}
 .hero-badge{display:inline-block;font-size:.72rem;letter-spacing:4px;text-transform:uppercase;border:1px solid rgba(255,255,255,.65);padding:10px 22px;background:rgba(21,44,73,.35)}
@@ -764,7 +770,7 @@ body.no-anim .hero-track{transition:none}
 
 <script>
 /* ============================================================
-   COMPLEJO AROMAS — CMS v10 (conserva borradores v7)
+   COMPLEJO AROMAS — CMS v11 (conserva borradores v7)
    Acceso: #admin · aromas / Fuhrfuhr300
 ============================================================ */
 var ADMIN_USER="aromas", ADMIN_PASS="Fuhrfuhr300", CMS_KEY="aromas_cms_v7", SES_KEY="aromas_admin_ok", DIRTY_KEY="aromas_dirty_v1";
@@ -891,7 +897,7 @@ function applyLang(l){ currentLang=l; document.documentElement.lang=l;
   renderTestis(); renderFaqs(); renderRates();
   if(lbBoxOpen()) showLb(); }
 
-/* ---------- CARRUSEL HERO con VIDEO como 1ª slide ---------- */
+/* ---------- CARRUSEL HERO: video integrado como slide ---------- */
 var heroTimer=null, heroIdx=0, HERO_SLIDES=[];
 function ytId(u){ var m=(u||"").match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/); return m?m[1]:(/^[\w-]{11}$/.test(u||"")?u:""); }
 function heroVideoCfg(){
@@ -946,32 +952,38 @@ function deactivateSlide(i){
 }
 function injectPlayer(el, vid){
   if(vid.kind==='yt'){
-    el.innerHTML='<iframe src="https://www.youtube.com/embed/'+vid.id+'?autoplay=1&mute=1&controls=0&playsinline=1&loop=1&playlist='+vid.id+'" allow="autoplay; encrypted-media" title="Video"></iframe>';
+    /* YouTube: recorte para cubrir bordes + póster que tapa la UI mientras carga */
+    el.innerHTML='<div class="vwrap"><iframe src="https://www.youtube.com/embed/'+vid.id+'?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist='+vid.id+'" allow="autoplay; encrypted-media" title="Video"></iframe></div><div class="vposter" style="background-image:url(https://i.ytimg.com/vi/'+vid.id+'/maxresdefault.jpg)"></div>';
+    setTimeout(function(){ var p=el.querySelector('.vposter'); if(p)p.classList.add('off'); },1400);
   } else {
-    el.innerHTML='<video src="'+vid.url+'" autoplay muted loop playsinline></video>';
+    /* MP4: sin controles, cubre todo, y al terminar pasa a la siguiente slide */
+    el.innerHTML='<video src="'+vid.url+'" muted autoplay playsinline preload="auto"></video>';
+    var v=el.querySelector('video');
+    if(v) v.addEventListener('ended', function(){ goNext(); });
+  }
+}
+function goNext(){
+  var track=document.getElementById("heroCarousel");
+  var n=track.children.length-1;
+  deactivateSlide(heroIdx);
+  heroIdx++;
+  setTrackX(true);
+  if(heroIdx===n){
+    activateSlide("clone");
+    setTimeout(function(){ setTrackX(false); deactivateSlide("clone"); heroIdx=0; activateSlide(0); scheduleNext(); },1500);
+  } else {
+    activateSlide(heroIdx);
+    scheduleNext();
   }
 }
 function currentDelay(){
   var s=HERO_SLIDES[heroIdx];
-  if(s && s.video) return s.video.kind==='yt'?12000:10000;
+  if(s && s.video){ return s.video.kind==='yt'?12000:600000; } /* mp4 avanza con 'ended' */
   return 7000;
 }
 function scheduleNext(){
   if(heroTimer) clearTimeout(heroTimer);
-  heroTimer=setTimeout(function(){
-    var track=document.getElementById("heroCarousel");
-    var n=track.children.length-1;
-    deactivateSlide(heroIdx);
-    heroIdx++;
-    setTrackX(true);
-    if(heroIdx===n){
-      activateSlide("clone");
-      setTimeout(function(){ setTrackX(false); deactivateSlide("clone"); heroIdx=0; activateSlide(0); scheduleNext(); },1500);
-    } else {
-      activateSlide(heroIdx);
-      scheduleNext();
-    }
-  }, currentDelay());
+  heroTimer=setTimeout(goNext, currentDelay());
 }
 function setTrackX(smooth){
   var track=document.getElementById("heroCarousel");
@@ -1397,8 +1409,8 @@ function renderDrawerImg(){
   var slides=(D('settings',{})||{}).heroSlides||null;
   var list=slides?slides:heroSlidesList();
   h+='<h4 style="margin-top:18px">🎬 Video del hero (1ª slide del carrusel)</h4>'+
-  '<p class="hint">Pegá un link de <b>YouTube</b> o una URL directa <b>.mp4</b>.<br>Si el video está en tu PC: subilo a YouTube como "Oculto" y pegá el link; o si pesa &lt;25 MB subilo al repo en <b>video/hero.mp4</b> y pegá <b>video/hero.mp4</b>.</p>'+
-  '<div class="adm-row"><input type="text" id="hvUrl" class="full" placeholder="https://youtube.com/watch?v=… o video/hero.mp4" value="'+((D('settings',{})||{}).heroVideo||"")+'"><button class="adm-btn" id="hvSave">Aplicar</button>'+(((D('settings',{})||{}).heroVideo)?'<button class="adm-btn del" id="hvDel">✕</button>':'')+'</div>';
+  '<p class="hint"><b>Recomendado: MP4 directo</b> (sin controles, cubre todo, sin cortes negros). Subilo al repo en <b>video/hero.mp4</b> (&lt;25 MB) y pegá <b>video/hero.mp4</b>.<br>YouTube queda solo como alternativa (tapa controles con póster y recorta bordes, pero puede verse un salto al repetir).</p>'+
+  '<div class="adm-row"><input type="text" id="hvUrl" class="full" placeholder="video/hero.mp4 o https://youtube.com/watch?v=…" value="'+((D('settings',{})||{}).heroVideo||"")+'"><button class="adm-btn" id="hvSave">Aplicar</button>'+(((D('settings',{})||{}).heroVideo)?'<button class="adm-btn del" id="hvDel">✕</button>':'')+'</div>';
   h+='<h4 style="margin-top:18px">🎞 Fotos del carrusel</h4><p class="hint">El video (si hay) va primero; después estas fotos con barrido lateral.</p>';
   list.forEach(function(src,i){ h+='<div class="adm-row"><img src="'+src+'"><span class="lb">Foto '+(i+1)+'</span><button class="adm-btn del" data-hs="'+i+'">✕</button></div>'; });
   h+='<div class="adm-add"><input type="text" id="hsUrl" class="full" placeholder="URL de imagen para el carrusel"><input type="file" id="hsFile" accept="image/*"><button class="adm-btn" id="hsAdd">+ Agregar al carrusel</button><button class="adm-btn" id="hsReset" style="margin-left:6px">Restaurar</button></div>';
